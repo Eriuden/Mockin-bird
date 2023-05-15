@@ -48,7 +48,6 @@ model Session {
     userId       String
     expires      DateTime
     user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
     @@index([userId])
 }
 
@@ -78,6 +77,7 @@ model Post {
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
     like Like[]
     @@index([userId])
+    @@unique([createdAt, id])
 }
 
 model Like {

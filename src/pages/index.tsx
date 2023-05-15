@@ -1,5 +1,8 @@
 import { type NextPage } from "next";
 import { NewPostForm } from "~/components/NewPostForm";
+import { InfinitePostsList } from "~/components/InfinitePostsList";
+import { api } from "~/utils/api";
+
 
 
 
@@ -11,8 +14,19 @@ const Home: NextPage = () => {
         
       </header>
       <NewPostForm/>
+      <RecentPosts/>
     </>
   )
+}
+
+function RecentPosts(){
+  const posts = api.post.infiniteFeed.useInfiniteQuery(
+    {}, 
+    {getNextPageParam: (lastPage) => lastPage.nextCursor}
+  )
+
+  return <InfinitePostsList posts={posts}/>
+  
 }
   
 
