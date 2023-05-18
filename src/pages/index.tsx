@@ -25,8 +25,15 @@ function RecentPosts(){
     {getNextPageParam: (lastPage) => lastPage.nextCursor}
   )
 
-  return <InfinitePostsList posts={posts}/>
-  
+  return (
+  <InfinitePostsList 
+  posts={posts.data?.pages.flatMap((page)=> page.posts)}
+  isError={posts.isError}
+  isLoading={posts.isLoading}
+  hasMore={posts.hasNextPage}
+  fetchNewPosts={posts.fetchNextPage()}
+  />
+  )
 }
   
 
