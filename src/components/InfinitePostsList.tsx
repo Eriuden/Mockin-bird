@@ -1,7 +1,10 @@
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import React from 'react'
 import InfiniteScroll from "react-infinite-scroll-component"
 import { ProfileImage } from './ProfileImage'
+import { VscHeart, VscHeartFilled} from "react-icons/vsc"
+import { IconHoverEffect } from './IconHoverEffect'
 
 type Posts = {
   id:string
@@ -65,13 +68,44 @@ function PostCard({id, user,content,createdAt, likeCount,likedByMe}: Posts) {
           <span className='text-gray-500'>{dateTimeFormatter.format(createdAt)}</span>
         </div>
         <p className='whitespace-pre-wrap'>{content}</p>
-        <LikeButton/>
+        <LikeButton  likedByMe={likedByMe} likeCount={likeCount}/>
       </div>
 
     </li>
   )
 }
 
-function LikeButton() {
-  return <h1>Like</h1>
+type LikeIconProps = {
+  likedByMe: boolean
+  likeCount: number
+}
+
+function LikeButton({likedByMe, likeCount} : LikeIconProps) {
+  const session = useSession()
+  const LikeIcon = likedByMe ? VscHeartFilled : VscHeart;
+
+  if (session.status !== "authenticated") {
+    return <div className='mb-1 mt-1 flex items-center gap-3 self-start
+    text-gray-500'>
+      <LikeIcon/>
+      <span>{likeCount}</span>
+    </div>
+  }
+  return (
+    <button className={`group items-center gap-1 self-start flex
+    transition-colors duration-200 ${likedByMe ? "text-red-500" : 
+    "text-gray-500 hover:text-red-500 focus-visible:text-red-500"}
+    `}>
+
+      <IconHoverEffect children red/>
+
+      <LikeIcon className={`transition-colors duration-200 ${likedByMe 
+      ? "fill-red-500" 
+      : "fill-gray-500 group-focus-visible:fill-red-500"}`
+      }
+      />
+      <span>{likeCount}</span>
+
+    </button>
+  )
 }
