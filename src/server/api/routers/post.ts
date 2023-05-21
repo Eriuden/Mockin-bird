@@ -14,24 +14,13 @@ export const postRouter = createTRPCRouter({
     cursor: z.object({ id: z.string(),
     createdAt: z.date()}).optional(),
   })
-  ).query(async ({ input: {limit = 10, cursor}, ctx}) => {
-    const currentUserId = ctx.session?.user.id
 
-    const posts = await ctx.prisma.findMany({
-      take: limit + 1,
-      cursor: cursor ? { createdAt_id: cursor} : undefined,
-      orderBy: [{ createdAt : "desc"}, { id:"desc"}],
-      select: {
-        id:true,
-        content:true,
-        createdAt: true,
-        _count: { select: { likes: true}},
-        likes: currentUserId == null ? false : { where: { userId: currentUserId}},
-        user: {
-          select: { name: true, id:true, image: true}
-        }
-      }
-    })
+
+  )
+  
+  .query(async ({ input: {limit = 10, cursor}, ctx}) => {
+    
+    const currentUserId = ctx.session?.user.id
 
     let nextCursor: typeof cursor | undefined
 
@@ -56,11 +45,32 @@ export const postRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure
-    .input(z.object({ text: z.string() }))
-    .query(({ input }) => {
-      return {
-        greeting: `Hello ${input.text}`,
-      };
+    .input(z.object({ content: z.string() }))
+    .mutation(async({ input: { content}, ctx }) => {
+      const post = await ctx.prisma.post.create({
+        data: { content, userId: ctx.session.user.id },
+      });
+
+      void ctx.revalidateSSG?.(`/profiles/${ctx.session.user.id}`)
+
+      return post
+      
     }),
-    toggleLike:
+
+    toggleLike: protectedProcedure.input(z.object({ id: z.string()}))
+    .query (async ({ input: {id} , ctx}) => {
+      const data = { postId: id, userId: ctx.session.user.id}
+
+      const existingLike = await ctx.prisma.like.findUnique({
+        where: { userId_postId: data}
+      })
+
+      if (existingLike == null) {
+        await ctx.prisma.like.create({data})
+        return { addedLike: true}
+      } else {
+        await ctx.prisma.like.delete({where : { userId_postId: data}})
+        return { addedLike: false}
+      }
+    })
 });

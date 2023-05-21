@@ -5,6 +5,7 @@ import InfiniteScroll from "react-infinite-scroll-component"
 import { ProfileImage } from './ProfileImage'
 import { VscHeart, VscHeartFilled} from "react-icons/vsc"
 import { IconHoverEffect } from './IconHoverEffect'
+import { api } from '~/utils/api'
 
 type Posts = {
   id:string
@@ -51,6 +52,43 @@ export const InfinitePostsList = ({posts, isError, isLoading, fetchNewPosts,
 const dateTimeFormatter = Intl.DateTimeFormat(undefined, {dateStyle:"short"})
 
 function PostCard({id, user,content,createdAt, likeCount,likedByMe}: Posts) {
+  const trpcUtils = api.useContext()
+  const toggleLike = api.post.toggleLike.useMutation({
+    onSuccess :async ({ addedLike }) => {
+      const updateData : Parameters<typeof 
+      trpcUtils.post.infiniteFeed.setInfiniteData>[1] = (oldData) => {
+        if (oldData == null) return
+
+        const countModifier = addedLike ? 1 : -1 
+
+        return {
+          ...oldData,
+          page: oldData.pages.map(page => {
+            return {
+              ...page,
+              posts: page.posts.map(post => {
+                if (post.id === id) {
+                  return {
+                    ...post,
+                    likeCount: post.likeCount + countModifier,
+                    likedByMe: addedLike
+                  }
+                }
+
+                return post
+              })
+            }
+          })
+        }
+      }
+
+      trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData)
+  },
+})
+
+  function handleToggleLike(){
+    toggleLike.mutate({ id })
+  }
   return (
     <li className='flex gap-4 border-b px-4 py-4'>
 
@@ -68,7 +106,8 @@ function PostCard({id, user,content,createdAt, likeCount,likedByMe}: Posts) {
           <span className='text-gray-500'>{dateTimeFormatter.format(createdAt)}</span>
         </div>
         <p className='whitespace-pre-wrap'>{content}</p>
-        <LikeButton  likedByMe={likedByMe} likeCount={likeCount}/>
+        <LikeButton onClick={handleToggleLike} isLoading={toggleLike.isLoading}
+        likedByMe={likedByMe} likeCount={likeCount}/>
       </div>
 
     </li>
@@ -76,11 +115,13 @@ function PostCard({id, user,content,createdAt, likeCount,likedByMe}: Posts) {
 }
 
 type LikeIconProps = {
+  onClick: ()=> void
+  isLoading: boolean
   likedByMe: boolean
   likeCount: number
 }
 
-function LikeButton({likedByMe, likeCount} : LikeIconProps) {
+function LikeButton({likedByMe, likeCount, isLoading, onClick} : LikeIconProps) {
   const session = useSession()
   const LikeIcon = likedByMe ? VscHeartFilled : VscHeart;
 
@@ -92,7 +133,9 @@ function LikeButton({likedByMe, likeCount} : LikeIconProps) {
     </div>
   }
   return (
-    <button className={`group items-center gap-1 self-start flex
+    <button disabled={isLoading}
+    onClick={onClick}
+    className={`group items-center gap-1 self-start flex
     transition-colors duration-200 ${likedByMe ? "text-red-500" : 
     "text-gray-500 hover:text-red-500 focus-visible:text-red-500"}
     `}>
