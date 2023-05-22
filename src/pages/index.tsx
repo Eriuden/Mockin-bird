@@ -30,8 +30,8 @@ function RecentPosts(){
   posts={posts.data?.pages.flatMap((page)=> page.posts)}
   isError={posts.isError}
   isLoading={posts.isLoading}
-  hasMore={posts.hasNextPage}
-  fetchNewPosts={posts.fetchNextPage()}
+  hasMore={posts.hasNextPage || false}
+  fetchNewPosts={posts.fetchNextPage() ||}
   />
   )
 }

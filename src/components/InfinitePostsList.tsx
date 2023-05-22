@@ -17,18 +17,18 @@ type Posts = {
 }
 
 type Props = {
-  isLoading: boolean
-  isError: boolean
-  hasMore: boolean
-  fetchNewPosts: () => Promise<unknown>
-  posts?: Posts[]
+  isLoading: boolean;
+  isError: boolean;
+  hasMore: boolean | undefined;
+  fetchNewPosts: () => Promise<unknown>;
+  posts?: Posts[];
 }
 
 
 export const InfinitePostsList = ({posts, isError, isLoading, fetchNewPosts, 
-  hasMore}: Props) => {
+  hasMore=false}: Props) => {
   if (isLoading) return <h1>Loading...</h1>
-  if (isLoading) return <h1>Error</h1>
+  if (isError) return <h1>Error</h1>
   if (posts == null || posts.length === 0) {
     return <h2>Pas de posts</h2>
   }
