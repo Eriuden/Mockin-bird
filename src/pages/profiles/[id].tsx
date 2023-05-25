@@ -1,19 +1,63 @@
-import { GetStaticPathsContext, NextPage } from 'next'
+import  type { GetStaticPaths, GetStaticPathsContext, InferGetStaticPropsType, NextPage } from 'next'
 import Head from 'next/head'
 import React from 'react'
+import { GetStaticPropsContext } from 'next'
+import { api } from '~/utils/api'
+import ErrorPage from "next/error"
+import { IconHoverEffect } from '~/components/IconHoverEffect'
+import { VscArrowLeft } from 'react-icons/vsc'
+import Link from 'next/link'
+import { ProfileImage } from '~/components/ProfileImage'
 
-export const id: NextPage = () => {
+
+
+
+export const ProfilePage: NextPage <InferGetStaticPropsType <typeof getStaticProps>> = ({id}) => {
+  const { data: profile} = api.profile.getById.useQuery({id})
+
+  if (profile == null || profile.name == null) return <ErrorPage statusCode={404}/>
   return (
     <div>
         <Head>
             <title>{`Profil Mockinbird de ${user.name}`}</title>
         </Head>
+        <header className='sticky top-0 z-10 flex items-center'>
+            <Link href ="..">
+                <IconHoverEffect>
+                    <VscArrowLeft/>
+                </IconHoverEffect>
+            </Link>
+            <ProfileImage src={profile.image}/>
+            <div className='ml-2 flex-grow'>
+                <h1>{profile.name}</h1>
+                <div>
+                    {profile.postCount} {""}
+                    {getPlurial(profile.postCount, "post", "posts")} {""}
+                    {profile.followersCount} {""}
+                    {getPlurial(profile.followersCount, "follower", "followers")} {""}
+                    {profile.followsCount} following        
+                </div>
+                <FollowButton isFollowing={profile.isFollowing} userId={id} onclick={()=> null}/>
+            </div>
+        </header>
     </div>
   )
 }
 
-export async function getStaticProps(context: GetStaticPathsContext<{id: string}) {
-    const id = context.params.id
+const pluralRules = new.Intl.PluralRules()
+function getPlurial(number: number, singular: string, plural: string){
+    return pluralRules.select(number) === "one" ? singular: plural
+}
+
+export const getStaticPaths: GetStaticPaths = () => {
+    return {
+        paths: [],
+        fallback:"blocking"
+    }
+}
+
+export async function getStaticProps(context: GetStaticPropsContext<{id: string}) {
+    const id = context.params?.id
     if (id == null) {
         return {
             redirect: {
@@ -23,5 +67,13 @@ export async function getStaticProps(context: GetStaticPathsContext<{id: string}
     }
 
     const ssg = ssgHelper()
-    ssg.profile
+    ssg.profile.getById.prefetch({id})
+
+    return {
+        props: {
+            id,
+            trpcState: ssg.dehydrate(),
+
+        }
+    }
 }
