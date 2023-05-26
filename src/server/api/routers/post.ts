@@ -10,6 +10,7 @@ import {
 import { inferAsyncReturnType } from "@trpc/server";
 
 export const postRouter = createTRPCRouter({
+
   infiniteProfileFeed: publicProcedure.input(
     z.object({
       userId: z.string(),
@@ -20,14 +21,11 @@ export const postRouter = createTRPCRouter({
     (async ({ input: {limit = 10, userId, cursor}, ctx}) => {
       const currentUserId = ctx.session?.user.id
       return await getInfinitePosts({
-        limit, ctx, cursor, whereClause: currentUserId == null ||!onlyFollowing ? undefined : {
-          user: {
-            followers: { some: { id: currentUserId}},
-          }
-        },
+        limit, ctx, cursor, whereClause: {userId}
       })
     }
   ),
+  
   infiniteFeed: publicProcedure.input(
   z.object({
     onlyFollowing: z.boolean().optional(),

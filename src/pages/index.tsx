@@ -45,7 +45,7 @@ function RecentPosts(){
   isError={posts.isError}
   isLoading={posts.isLoading}
   hasMore={posts.hasNextPage || false}
-  fetchNewPosts={posts.fetchNextPage() ||}
+  fetchNewPosts={posts.fetchNextPage}
   />
   )
 }

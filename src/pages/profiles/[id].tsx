@@ -8,14 +8,37 @@ import { IconHoverEffect } from '~/components/IconHoverEffect'
 import { VscArrowLeft } from 'react-icons/vsc'
 import Link from 'next/link'
 import { ProfileImage } from '~/components/ProfileImage'
+import { InfinitePostsList } from '~/components/InfinitePostsList'
+import { Button } from '~/components/Button'
+import { useSession } from 'next-auth/react'
 
 
 
 
 export const ProfilePage: NextPage <InferGetStaticPropsType <typeof getStaticProps>> = ({id}) => {
   const { data: profile} = api.profile.getById.useQuery({id})
+  const posts = api.post.infiniteProfileFeed.useInfiniteQuery({ userId: id},
+    { getNextPageParam: (lastPage) => lastPage.nextCursor})
 
-  if (profile == null || profile.name == null) return <ErrorPage statusCode={404}/>
+    const trpcUtils = api.useContext()
+    const toggleFollow = api.profile.toggleFollow.useMutation({ onSuccess: ({
+        addedFollow }) => {
+            trpcUtils.profile.getById.setData({ id} , oldData => {
+                if (oldData == null) return 
+
+                const countModifier = addedFollow ? 1 : -1 
+                return {
+                    ...oldData,
+                    isFollowing: addedFollow,
+                    followersCount: oldData.followersCount + countModifier,
+                }
+            })
+        }
+    })}
+
+  if (profile == null || profile.name == null) 
+    return <ErrorPage statusCode={404}/>
+
   return (
     <div>
         <Head>
@@ -37,11 +60,38 @@ export const ProfilePage: NextPage <InferGetStaticPropsType <typeof getStaticPro
                     {getPlurial(profile.followersCount, "follower", "followers")} {""}
                     {profile.followsCount} following        
                 </div>
-                <FollowButton isFollowing={profile.isFollowing} userId={id} onclick={()=> null}/>
+                <FollowButton 
+                    isFollowing={profile.isFollowing} 
+                    userId={id} 
+                    onclick={()=> toggleFollow.mutate({ userId: id})}
+                />
+                <main>
+                    <InfinitePostsList 
+                        posts={posts.data?.pages.flatMap((page)=> page.posts)}
+                        isError={posts.isError}
+                        isLoading={posts.isLoading}
+                        hasMore={posts.hasNextPage || false}
+                        fetchNewPosts={posts.fetchNextPage}
+                    />
+                </main>
             </div>
         </header>
     </div>
   )
+}
+
+function FollowButton({userId, isFollowing, isLoading, onClick}: {userId: String,
+isFollowing: boolean, isLoading: boolean, onClick: ()=> void}){
+    const session = useSession()
+
+    if (session.status !== "authenticated" || session.data.user.id === userId){
+        return null
+    }
+    return (
+        <Button disabled={isLoading} onClick={onClick} small gray={isFollowing}>
+            {isFollowing ? "Unfollow" : "Follow"}
+        </Button>
+        )
 }
 
 const pluralRules = new.Intl.PluralRules()

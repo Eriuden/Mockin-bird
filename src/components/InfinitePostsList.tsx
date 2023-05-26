@@ -84,7 +84,9 @@ function PostCard({id, user,content,createdAt, likeCount,likedByMe}: Posts) {
       }
 
       trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData)
-  },
+      trpcUtils.post.infiniteFeed.setInfiniteData({onlyFollowing: true}, updateData)
+      trpcUtils.post.infiniteProfileFeed.setInfiniteData({userId: user.id}, updateData)
+    },
 })
 
   function handleToggleLike(){
